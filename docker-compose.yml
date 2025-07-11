@@ -1,0 +1,79 @@
+services:
+  # =============================
+  # Broker de mensageria
+  # =============================
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: pass
+      RABBITMQ_ERLANG_COOKIE: "cookiefortestrabbitmq321"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+  # =============================
+  # Bancos de dados por serviço
+  # =============================
+
+  mysql-order:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: order
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-order-data:/var/lib/mysql
+
+  mysql-payment-worker:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: payment_worker
+    ports:
+      - "3311:3306"
+    volumes:
+      - mysql-payment-worker-data:/var/lib/mysql
+
+  
+  # =========================
+  # Serviços (microserviços)
+  # =========================
+
+  order-service-api:
+    build: ./order-service-api
+    volumes:
+      - ./order-service-api:/app
+    working_dir: /app
+    command: npm start
+    depends_on:
+      - rabbitmq
+      - mysql-order
+    env_file:
+      - ./order-service-api/.env
+
+  payment-worker-service-api:
+    build: ./payment-worker-service-api
+    volumes:
+      - ./payment-worker-service-api:/app
+    working_dir: /app
+    command: npm start
+    depends_on:
+      - rabbitmq
+      - mysql-payment-worker
+    env_file:
+      - ./payment-worker-service-api/.env
+
+
+volumes:
+  rabbitmq-data:
+  mysql-order-data:
+  mysql-payment-worker-data:
+
+  
