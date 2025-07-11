@@ -1,0 +1,41 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Status {
+  PENDING
+  SEND
+  PAID
+  FAILED
+  END
+}
+
+model PaymentBatch {
+  batch_id    String   @id @default(uuid())
+  raw_data    Json
+  status      Status   @default(PENDING)
+  received_at DateTime @default(now())
+
+  payments Payment[]
+}
+
+model Payment {
+  payment_id String   @id @default(uuid())
+  batch_id   String
+  user_id    String
+  amount     Float
+  product_id String
+  tokenCard  String
+  status     Status   @default(PENDING)
+  created_at DateTime @default(now())
+
+  batch PaymentBatch @relation(fields: [batch_id], references: [batch_id])
+
+  @@index([batch_id])
+}
